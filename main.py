@@ -3,6 +3,7 @@ import time
 from tqdm import tqdm
 from termcolor import colored
 from pyfiglet import Figlet
+import sys
 
 class SimplePortScanner:
     def __init__(self, target, ports):
@@ -30,8 +31,15 @@ class SimplePortScanner:
         
         # Add progress bar
         results = []
-        for f in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Scanning ports"):
-            results.append(await f)
+        try:
+            for f in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Scanning ports"):
+                results.append(await f)
+        except KeyboardInterrupt:
+            print(colored("\nScan interrupted by user.", 'red'))
+            return
+        except Exception as e:
+            print(colored(f"\nAn error occurred: {e}", 'red'))
+            return
         
         open_ports = [port for port, status in results if status]
         closed_ports = len(self.ports) - len(open_ports)
@@ -63,6 +71,10 @@ if __name__ == "__main__":
         scanner = SimplePortScanner(target, ports)
         asyncio.run(scanner.run_scan())
     except ValueError:
-        print("Invalid port range. Please use the format 'start-end', e.g., 1-1024.")
+        print(colored("Invalid port range. Please use the format 'start-end', e.g., 1-1024.", 'red'))
+    except KeyboardInterrupt:
+        print(colored("\nScan interrupted by user.", 'red'))
+        sys.exit(0)
     except Exception as e:
-        print(f"Error: {e}")
+        print(colored(f"Error: {e}", 'red'))
+        sys.exit(1)
